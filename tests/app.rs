@@ -1,8 +1,15 @@
-use agentman::{AgentKind, Capability, Session};
 use agentman::app::App;
+use agentman::{AgentKind, Capability, Session};
 
 fn session(title: &str) -> Session {
-    Session::new(AgentKind::Codex, title, title, None, "/tmp/x".into(), [Capability::Resume])
+    Session::new(
+        AgentKind::Codex,
+        title,
+        title,
+        None,
+        "/tmp/x".into(),
+        [Capability::Resume],
+    )
 }
 
 #[test]

@@ -1,7 +1,11 @@
 use crate::{Session, SessionAction, ranked_sessions};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum UiAction { Trash(usize), Launch(usize, SessionAction), Rename(usize, String) }
+pub enum UiAction {
+    Trash(usize),
+    Launch(usize, SessionAction),
+    Rename(usize, String),
+}
 
 #[derive(Debug)]
 pub struct App {
@@ -18,33 +22,61 @@ pub struct App {
 impl App {
     #[must_use]
     pub fn new(sessions: Vec<Session>) -> Self {
-        Self { sessions, filter: String::new(), selected: 0, searching: false, confirming_delete: false, renaming: false, rename_buffer: String::new(), pending: None }
+        Self {
+            sessions,
+            filter: String::new(),
+            selected: 0,
+            searching: false,
+            confirming_delete: false,
+            renaming: false,
+            rename_buffer: String::new(),
+            pending: None,
+        }
     }
 
     #[must_use]
-    pub fn matching(&self) -> Vec<usize> { ranked_sessions(&self.sessions, &self.filter) }
+    pub fn matching(&self) -> Vec<usize> {
+        ranked_sessions(&self.sessions, &self.filter)
+    }
 
     #[must_use]
-    pub fn visible_titles(&self) -> Vec<&str> { self.matching().into_iter().map(|index| self.sessions[index].title.as_str()).collect() }
+    pub fn visible_titles(&self) -> Vec<&str> {
+        self.matching()
+            .into_iter()
+            .map(|index| self.sessions[index].title.as_str())
+            .collect()
+    }
 
     #[must_use]
-    pub const fn searching(&self) -> bool { self.searching }
+    pub const fn searching(&self) -> bool {
+        self.searching
+    }
 
     #[must_use]
-    pub const fn confirming_delete(&self) -> bool { self.confirming_delete }
+    pub const fn confirming_delete(&self) -> bool {
+        self.confirming_delete
+    }
 
     #[must_use]
-    pub const fn renaming(&self) -> bool { self.renaming }
+    pub const fn renaming(&self) -> bool {
+        self.renaming
+    }
 
     #[must_use]
-    pub fn rename_buffer(&self) -> &str { &self.rename_buffer }
+    pub fn rename_buffer(&self) -> &str {
+        &self.rename_buffer
+    }
 
-    pub fn take_action(&mut self) -> Option<UiAction> { self.pending.take() }
+    pub fn take_action(&mut self) -> Option<UiAction> {
+        self.pending.take()
+    }
 
     pub fn key(&mut self, key: char) {
         if self.confirming_delete {
-            if matches!(key, 'y' | 'Y') {
-                if let Some(index) = self.matching().get(self.selected) { self.pending = Some(UiAction::Trash(*index)); }
+            if matches!(key, 'y' | 'Y')
+                && let Some(index) = self.matching().get(self.selected)
+            {
+                self.pending = Some(UiAction::Trash(*index));
             }
             self.confirming_delete = false;
             return;
@@ -53,12 +85,17 @@ impl App {
             match key {
                 '\n' => {
                     if let Some(index) = self.matching().get(self.selected) {
-                        self.pending = Some(UiAction::Rename(*index, self.rename_buffer.trim().to_owned()));
+                        self.pending = Some(UiAction::Rename(
+                            *index,
+                            self.rename_buffer.trim().to_owned(),
+                        ));
                     }
                     self.renaming = false;
                 }
                 '\u{1b}' => self.renaming = false,
-                '\u{8}' | '\u{7f}' => { self.rename_buffer.pop(); }
+                '\u{8}' | '\u{7f}' => {
+                    self.rename_buffer.pop();
+                }
                 _ if !key.is_control() => self.rename_buffer.push(key),
                 _ => {}
             }
@@ -67,8 +104,14 @@ impl App {
         if self.searching {
             match key {
                 '\u{1b}' => self.searching = false,
-                '\u{8}' | '\u{7f}' => { self.filter.pop(); self.selected = 0; }
-                _ if !key.is_control() => { self.filter.push(key); self.selected = 0; }
+                '\u{8}' | '\u{7f}' => {
+                    self.filter.pop();
+                    self.selected = 0;
+                }
+                _ if !key.is_control() => {
+                    self.filter.push(key);
+                    self.selected = 0;
+                }
                 _ => {}
             }
             return;
@@ -79,7 +122,10 @@ impl App {
             'k' => self.move_selection(-1),
             'd' if !self.matching().is_empty() => self.confirming_delete = true,
             'r' if !self.matching().is_empty() => {
-                self.rename_buffer = self.matching().get(self.selected).map_or_else(String::new, |index| self.sessions[*index].title.clone());
+                self.rename_buffer = self
+                    .matching()
+                    .get(self.selected)
+                    .map_or_else(String::new, |index| self.sessions[*index].title.clone());
                 self.renaming = true;
             }
             '\n' => self.emit_launch(SessionAction::Resume),
@@ -92,11 +138,16 @@ impl App {
 
     pub fn move_selection(&mut self, delta: isize) {
         let count = self.matching().len();
-        if count == 0 { self.selected = 0; return; }
+        if count == 0 {
+            self.selected = 0;
+            return;
+        }
         self.selected = self.selected.saturating_add_signed(delta).min(count - 1);
     }
 
     fn emit_launch(&mut self, action: SessionAction) {
-        if let Some(index) = self.matching().get(self.selected) { self.pending = Some(UiAction::Launch(*index, action)); }
+        if let Some(index) = self.matching().get(self.selected) {
+            self.pending = Some(UiAction::Launch(*index, action));
+        }
     }
 }

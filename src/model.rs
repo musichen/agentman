@@ -81,7 +81,7 @@ pub fn ranked_sessions(sessions: &[Session], query: &str) -> Vec<usize> {
         return (0..sessions.len()).collect();
     }
     let matcher = SkimMatcherV2::default();
-    let mut matches: Vec<(usize, i64)> = sessions
+    let mut ranked: Vec<(usize, i64)> = sessions
         .iter()
         .enumerate()
         .filter_map(|(index, session)| {
@@ -90,9 +90,11 @@ pub fn ranked_sessions(sessions: &[Session], query: &str) -> Vec<usize> {
                 .as_ref()
                 .map_or_else(String::new, |path| path.to_string_lossy().into_owned());
             let haystack = format!("{} {} {}", session.title, session.id, project);
-            matcher.fuzzy_match(&haystack, query).map(|score| (index, score))
+            matcher
+                .fuzzy_match(&haystack, query)
+                .map(|score| (index, score))
         })
         .collect();
-    matches.sort_by(|left, right| right.1.cmp(&left.1).then(left.0.cmp(&right.0)));
-    matches.into_iter().map(|(index, _)| index).collect()
+    ranked.sort_by(|left, right| right.1.cmp(&left.1).then(left.0.cmp(&right.0)));
+    ranked.into_iter().map(|(index, _)| index).collect()
 }
