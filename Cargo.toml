@@ -1,0 +1,32 @@
+[package]
+name = "agentman"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "A colourful terminal manager for local coding-agent sessions"
+license = "MIT"
+repository = "https://github.com/musichen/agentman"
+readme = "README.md"
+keywords = ["agents", "tui", "ratatui", "codex", "claude"]
+categories = ["command-line-utilities", "development-tools"]
+include = ["src/**", "tests/**", "assets/**", "Cargo.toml", "README.md", "LICENSE"]
+
+[dependencies]
+anyhow = "1"
+crossterm = "0.29"
+fuzzy-matcher = "0.3"
+ratatui = "0.30"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+trash = "5"
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
