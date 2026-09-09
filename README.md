@@ -50,4 +50,6 @@ cargo test
 cargo run
 ```
 
+Check or install updates with `agentman update`; inspect the installed version with `agentman --version`.
+
 MIT licensed.

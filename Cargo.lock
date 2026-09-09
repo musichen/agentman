@@ -4,12 +4,13 @@ version = 4
 
 [[package]]
 name = "agentman"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "crossterm",
  "fuzzy-matcher",
  "ratatui",
+ "semver",
  "serde",
  "serde_json",
  "tempfile",

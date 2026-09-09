@@ -1,6 +1,6 @@
 {
   "name": "agentman",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Cross-platform launcher for the Agentman coding-agent session manager",
   "license": "MIT",
   "repository": "github:musichen/agentman",

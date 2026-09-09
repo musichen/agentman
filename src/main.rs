@@ -2,7 +2,7 @@ use std::{io, process::Command, time::Duration};
 
 use agentman::{
     app::{App, UiAction},
-    discover_all, launch_command, rename_session, ui,
+    discover_all, latest_version, launch_command, rename_session, ui, update_message,
 };
 use crossterm::{
     event::{self, Event, KeyCode, MouseEventKind},
@@ -20,6 +20,18 @@ fn main() -> anyhow::Result<()> {
         println!(
             "agentman\n\nInteractive local coding-agent session manager.\n\nShortcuts: Enter resume · f fork · y/Y YOLO · r rename · d move to Trash · / search · q quit"
         );
+        return Ok(());
+    }
+    if std::env::args().any(|argument| argument == "update") {
+        let current = env!("CARGO_PKG_VERSION");
+        let latest = latest_version()?;
+        println!("{}", update_message(current, &latest.to_string()));
+        if semver::Version::parse(current)? < latest {
+            let status = Command::new("cargo")
+                .args(["install", "agentman", "--force"])
+                .status()?;
+            anyhow::ensure!(status.success(), "cargo install agentman failed");
+        }
         return Ok(());
     }
     let home = std::env::var_os("HOME").ok_or_else(|| anyhow::anyhow!("HOME is not set"))?;
