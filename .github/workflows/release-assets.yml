@@ -15,6 +15,8 @@ permissions:
 
 jobs:
   build:
+    env:
+      RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
     strategy:
       matrix:
         include:
@@ -60,7 +62,7 @@ jobs:
       - name: Stage binary and Debian package
         shell: bash
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          version="${RELEASE_TAG#v}"
           mkdir -p dist/pkg/usr/bin dist/pkg/DEBIAN
           if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
             cp "target/${{ matrix.target }}/release/agentman.exe" "dist/agentman-v${version}-${{ matrix.platform }}-${{ matrix.arch }}.exe"
