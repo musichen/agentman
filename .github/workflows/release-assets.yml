@@ -101,3 +101,23 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
         run: gh release upload "$RELEASE_TAG" dist/agentman-* --clobber --repo "$GITHUB_REPOSITORY"
+
+  npm-publish:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - name: Publish npm wrapper
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          version=$(node -p "require('./npm/package.json').version")
+          if npm view "agentman@$version" version >/dev/null 2>&1; then
+            echo "agentman@$version already on npm, skipping"
+          else
+            npm publish ./npm --access public
+          fi
