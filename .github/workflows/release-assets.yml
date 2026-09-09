@@ -116,8 +116,8 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           version=$(node -p "require('./npm/package.json').version")
-          if npm view "agentman@$version" version >/dev/null 2>&1; then
-            echo "agentman@$version already on npm, skipping"
+          if npm view "@webboxescom/agentman@$version" version >/dev/null 2>&1; then
+            echo "@webboxescom/agentman@$version already on npm, skipping"
           else
             npm publish ./npm --access public
           fi
