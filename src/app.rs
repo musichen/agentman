@@ -1,4 +1,4 @@
-use crate::{Session, SessionAction, ranked_sessions};
+use crate::{AgentKind, Session, SessionAction, ranked_sessions};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum UiAction {
@@ -12,6 +12,7 @@ pub struct App {
     pub sessions: Vec<Session>,
     pub filter: String,
     pub selected: usize,
+    pub agent_filter: Option<AgentKind>,
     searching: bool,
     confirming_delete: bool,
     renaming: bool,
@@ -26,6 +27,7 @@ impl App {
             sessions,
             filter: String::new(),
             selected: 0,
+            agent_filter: None,
             searching: false,
             confirming_delete: false,
             renaming: false,
@@ -36,7 +38,24 @@ impl App {
 
     #[must_use]
     pub fn matching(&self) -> Vec<usize> {
-        ranked_sessions(&self.sessions, &self.filter)
+        let scoped: Vec<(usize, Session)> = self
+            .sessions
+            .iter()
+            .enumerate()
+            .filter(|(_, session)| self.agent_filter.is_none_or(|agent| session.agent == agent))
+            .map(|(index, session)| (index, session.clone()))
+            .collect();
+        let candidates: Vec<Session> = scoped.iter().map(|(_, session)| session.clone()).collect();
+        ranked_sessions(&candidates, &self.filter)
+            .into_iter()
+            .map(|index| scoped[index].0)
+            .collect()
+    }
+
+    pub fn select_agent(&mut self, agent: Option<AgentKind>) {
+        self.agent_filter = agent;
+        self.selected = 0;
+        self.filter.clear();
     }
 
     #[must_use]
@@ -132,6 +151,14 @@ impl App {
             'f' => self.emit_launch(SessionAction::Fork),
             'y' => self.emit_launch(SessionAction::YoloResume),
             'Y' => self.emit_launch(SessionAction::YoloFork),
+            '0' => self.select_agent(None),
+            '1' => self.select_agent(Some(AgentKind::Codex)),
+            '2' => self.select_agent(Some(AgentKind::ClaudeCode)),
+            '3' => self.select_agent(Some(AgentKind::OpenClaude)),
+            '4' => self.select_agent(Some(AgentKind::Pi)),
+            '5' => self.select_agent(Some(AgentKind::Codewhale)),
+            '6' => self.select_agent(Some(AgentKind::Dsh)),
+            '7' => self.select_agent(Some(AgentKind::Acryl)),
             _ => {}
         }
     }

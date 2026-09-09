@@ -185,6 +185,7 @@ fn parse_session(agent: AgentKind, path: PathBuf) -> Session {
     let modified = fs::metadata(&path)
         .and_then(|meta| meta.modified())
         .unwrap_or(SystemTime::UNIX_EPOCH);
+    let size_bytes = fs::metadata(&path).map_or(0, |meta| meta.len());
     let fallback_id = path
         .file_stem()
         .and_then(|name| name.to_str())
@@ -205,6 +206,8 @@ fn parse_session(agent: AgentKind, path: PathBuf) -> Session {
             [Capability::ReadOnly, Capability::Trash],
         );
         session.modified = modified;
+        session.last_used = Some(modified);
+        session.size_bytes = size_bytes;
         session.diagnostic = Some("Could not read session metadata".to_owned());
         return session;
     };
@@ -215,6 +218,8 @@ fn parse_session(agent: AgentKind, path: PathBuf) -> Session {
     let capabilities = capabilities(agent);
     let mut session = Session::new(agent, id, title, project, path, capabilities);
     session.modified = modified;
+    session.last_used = Some(modified);
+    session.size_bytes = size_bytes;
     session
 }
 

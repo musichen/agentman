@@ -47,6 +47,9 @@ pub struct Session {
     pub project: Option<PathBuf>,
     pub path: PathBuf,
     pub modified: SystemTime,
+    pub created: Option<SystemTime>,
+    pub last_used: Option<SystemTime>,
+    pub size_bytes: u64,
     pub capabilities: BTreeSet<Capability>,
     pub diagnostic: Option<String>,
 }
@@ -68,6 +71,9 @@ impl Session {
             project,
             path,
             modified: SystemTime::UNIX_EPOCH,
+            created: None,
+            last_used: None,
+            size_bytes: 0,
             capabilities: capabilities.into_iter().collect(),
             diagnostic: None,
         }
