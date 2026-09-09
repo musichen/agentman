@@ -11,6 +11,14 @@ cargo install agentman
 agentman
 ```
 
+Or install the platform-selecting npm wrapper (macOS ARM64, Windows x64,
+Linux x64, and Linux ARM64):
+
+```bash
+npm i -g agentman
+agentman
+```
+
 Agentman reads local metadata from the agent directories below and never needs a network connection during normal use:
 
 | Agent | Storage | Native launch support |
