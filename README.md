@@ -15,7 +15,7 @@ Or install the platform-selecting npm wrapper (macOS ARM64, Windows x64,
 Linux x64, and Linux ARM64):
 
 ```bash
-npm i -g @webboxescom/agentman
+npm i -g agentman-cli
 agentman
 ```
 

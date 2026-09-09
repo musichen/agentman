@@ -1,5 +1,5 @@
 {
-  "name": "@webboxescom/agentman",
+  "name": "agentman-cli",
   "version": "0.1.3",
   "description": "Cross-platform launcher for the Agentman coding-agent session manager",
   "license": "MIT",

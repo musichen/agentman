@@ -111,7 +111,17 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
-      - name: Publish npm wrapper
+      - name: Publish agentman-cli (generic)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          version=$(node -p "require('./npm/package.json').version")
+          if npm view "agentman-cli@$version" version >/dev/null 2>&1; then
+            echo "agentman-cli@$version already on npm, skipping"
+          else
+            npm publish ./npm --access public
+          fi
+      - name: Publish @webboxescom/agentman (scoped)
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
@@ -119,5 +129,7 @@ jobs:
           if npm view "@webboxescom/agentman@$version" version >/dev/null 2>&1; then
             echo "@webboxescom/agentman@$version already on npm, skipping"
           else
-            npm publish ./npm --access public
+            cp -r ./npm /tmp/npm-scoped
+            node -e "const p='/tmp/npm-scoped/package.json';const j=require(p);j.name='@webboxescom/agentman';require('fs').writeFileSync(p,JSON.stringify(j,null,2))"
+            npm publish /tmp/npm-scoped --access public
           fi
