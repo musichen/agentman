@@ -1,9 +1,83 @@
-use std::{fs, path::{Path, PathBuf}, time::SystemTime};
+use std::{fs, io::Write, path::{Path, PathBuf}, time::SystemTime};
 
 use anyhow::Result;
 use serde_json::Value;
 
 use crate::{AgentKind, Capability, Session};
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum SessionAction {
+    Resume,
+    Fork,
+    YoloResume,
+    YoloFork,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CommandSpec {
+    pub program: String,
+    pub args: Vec<String>,
+}
+
+#[must_use]
+pub fn launch_command(session: &Session, action: SessionAction) -> Option<CommandSpec> {
+    let id = &session.id;
+    let (program, mut args) = match (session.agent, action) {
+        (AgentKind::Codex, SessionAction::Resume) => ("codex", vec!["resume".into(), id.clone()]),
+        (AgentKind::Codex, SessionAction::Fork) => ("codex", vec!["fork".into(), id.clone()]),
+        (AgentKind::Codex, SessionAction::YoloResume) => ("codex", vec!["resume".into(), "--dangerously-bypass-approvals-and-sandbox".into(), id.clone()]),
+        (AgentKind::Codex, SessionAction::YoloFork) => ("codex", vec!["fork".into(), "--dangerously-bypass-approvals-and-sandbox".into(), id.clone()]),
+        (AgentKind::ClaudeCode, SessionAction::Resume) => ("claude", vec!["--resume".into(), id.clone()]),
+        (AgentKind::ClaudeCode, SessionAction::YoloResume) => ("claude", vec!["--resume".into(), id.clone(), "--dangerously-skip-permissions".into()]),
+        (AgentKind::OpenClaude, SessionAction::Resume) => ("openclaude", vec!["--resume".into(), id.clone()]),
+        (AgentKind::OpenClaude, SessionAction::Fork) => ("openclaude", vec!["--resume".into(), id.clone(), "--fork-session".into()]),
+        (AgentKind::OpenClaude, SessionAction::YoloResume) => ("openclaude", vec!["--resume".into(), id.clone(), "--yolo".into()]),
+        (AgentKind::OpenClaude, SessionAction::YoloFork) => ("openclaude", vec!["--resume".into(), id.clone(), "--fork-session".into(), "--yolo".into()]),
+        (AgentKind::Pi, SessionAction::Resume) => ("pi", vec!["--session".into(), id.clone()]),
+        (AgentKind::Pi, SessionAction::Fork) => ("pi", vec!["--fork".into(), id.clone()]),
+        (AgentKind::Codewhale, SessionAction::Resume) => ("codewhale", vec!["resume".into(), id.clone()]),
+        (AgentKind::Codewhale, SessionAction::Fork) => ("codewhale", vec!["fork".into(), id.clone()]),
+        (AgentKind::Acryl, SessionAction::Resume) => ("acryl", vec!["--resume".into(), id.clone()]),
+        _ => return None,
+    };
+    Some(CommandSpec { program: program.into(), args: std::mem::take(&mut args) })
+}
+
+pub fn rename_session(session: &Session, new_title: &str) -> Result<()> {
+    let source = fs::read_to_string(&session.path)?;
+    let mut changed = false;
+    let rewritten = source
+        .lines()
+        .map(|line| {
+            let Ok(mut value) = serde_json::from_str::<Value>(line) else { return line.to_owned() };
+            if !changed && set_title(&mut value, new_title) {
+                changed = true;
+                serde_json::to_string(&value).unwrap_or_else(|_| line.to_owned())
+            } else {
+                line.to_owned()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    anyhow::ensure!(changed, "this session has no editable native title");
+    let temporary = session.path.with_extension("agentman.tmp");
+    let mut file = fs::File::create(&temporary)?;
+    file.write_all(rewritten.as_bytes())?;
+    file.sync_all()?;
+    fs::rename(temporary, &session.path)?;
+    Ok(())
+}
+
+fn set_title(value: &mut Value, new_title: &str) -> bool {
+    let Value::Object(map) = value else { return false };
+    for key in ["title", "summary", "name"] {
+        if let Some(Value::String(title)) = map.get_mut(key) {
+            *title = new_title.to_owned();
+            return true;
+        }
+    }
+    map.values_mut().any(|value| set_title(value, new_title))
+}
 
 const ROOTS: &[(AgentKind, &str)] = &[
     (AgentKind::Codex, ".codex/sessions"),

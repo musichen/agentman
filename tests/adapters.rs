@@ -1,6 +1,6 @@
 use std::fs;
 
-use agentman::{AgentKind, discover_all};
+use agentman::{AgentKind, Capability, Session, SessionAction, discover_all, launch_command, rename_session};
 use tempfile::tempdir;
 
 #[test]
@@ -25,4 +25,31 @@ fn discovers_all_agent_roots_from_metadata_only() {
     assert_eq!(sessions.len(), 7);
     assert!(sessions.iter().any(|session| session.agent == AgentKind::Codex && session.id == "codex-1"));
     assert!(sessions.iter().any(|session| session.agent == AgentKind::Acryl && session.title == "ACRYL title"));
+}
+
+#[test]
+fn codex_yolo_fork_uses_the_real_subcommand_and_flag() {
+    let session = Session::new(AgentKind::Codex, "id", "title", None, "/tmp/x".into(), [Capability::Fork]);
+    let command = launch_command(&session, SessionAction::YoloFork).unwrap();
+    assert_eq!(command.program, "codex");
+    assert_eq!(command.args, ["fork", "--dangerously-bypass-approvals-and-sandbox", "id"]);
+}
+
+#[test]
+fn openclaude_yolo_fork_uses_its_documented_flags() {
+    let session = Session::new(AgentKind::OpenClaude, "id", "title", None, "/tmp/x".into(), [Capability::Fork]);
+    let command = launch_command(&session, SessionAction::YoloFork).unwrap();
+    assert_eq!(command.args, ["--resume", "id", "--fork-session", "--yolo"]);
+}
+
+#[test]
+fn rename_changes_metadata_without_touching_message_content() {
+    let directory = tempdir().unwrap();
+    let path = directory.path().join("session.json");
+    fs::write(&path, r#"{"title":"Old","messages":[{"content":"do not touch"}]}"#).unwrap();
+    let session = Session::new(AgentKind::Codewhale, "id", "Old", None, path.clone(), [Capability::Rename]);
+    rename_session(&session, "New title").unwrap();
+    let changed: serde_json::Value = serde_json::from_str(&fs::read_to_string(path).unwrap()).unwrap();
+    assert_eq!(changed["title"], "New title");
+    assert_eq!(changed["messages"][0]["content"], "do not touch");
 }
